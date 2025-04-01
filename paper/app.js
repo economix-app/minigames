@@ -31,23 +31,19 @@ const WORLD_HEIGHT = 20;
 let world = [];
 
 function generateWorld() {
-  // Terrain generation
-  const surfaceHeight = Array.from({ length: WORLD_WIDTH }, (_, x) =>
-    Math.floor(Math.sin(x / 15) * 3 + WORLD_HEIGHT / 2 - 2)
-  );
+  const SURFACE_LEVEL = Math.floor(WORLD_HEIGHT * 0.75);
 
   for (let x = 0; x < WORLD_WIDTH; x++) {
     world[x] = [];
     for (let y = 0; y < WORLD_HEIGHT; y++) {
-      if (y > surfaceHeight[x]) {
+      if (y > SURFACE_LEVEL) {
         world[x][y] = 'air';
-      } else if (y === surfaceHeight[x]) {
+      } else if (y === SURFACE_LEVEL) {
         world[x][y] = 'grass';
-      } else if (y > surfaceHeight[x] - 4) {
+      } else if (y > SURFACE_LEVEL - 4) {
         world[x][y] = 'dirt';
       } else {
-        // Stone with random caves
-        world[x][y] = Math.random() < 0.92 ? 'stone' : 'air';
+        world[x][y] = 'stone';
       }
     }
   }
@@ -56,7 +52,7 @@ function generateWorld() {
 // Player object
 const player = {
   x: WORLD_WIDTH / 2 * BLOCK_SIZE,
-  y: 0,
+  y: WORLD_HEIGHT / 2 * BLOCK_SIZE,
   width: BLOCK_SIZE * 0.6,
   height: BLOCK_SIZE * 1.2,
   velocityX: 0,
