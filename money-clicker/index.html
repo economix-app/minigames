@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico">
+    <title>Money Clicker</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #1a1a1a;
+        color: white;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+        user-select: none;
+      }
+
+      #moneyDisplay {
+        font-size: 48px;
+        margin: 20px;
+        color: #4CAF50;
+      }
+
+      #clickArea {
+        width: 200px;
+        height: 200px;
+        background-color: #4CAF50;
+        border-radius: 50%;
+        margin: 20px auto;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        transition: transform 0.1s;
+      }
+
+      #clickArea:active {
+        transform: scale(0.95);
+      }
+
+      .shop {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 10px;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .upgrade {
+        background-color: #333;
+        padding: 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .upgrade:hover {
+        background-color: #444;
+      }
+
+      .upgrade:active {
+        background-color: #555;
+      }
+
+      .upgrade.disabled {
+        background-color: #222;
+        cursor: not-allowed;
+      }
+
+      .upgrade h3 {
+        margin: 0 0 10px 0;
+        color: #4CAF50;
+      }
+
+      .cost {
+        color: #4CAF50;
+        font-weight: bold;
+      }
+
+      .owned {
+        color: #888;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="moneyDisplay">$0</div>
+
+    <div id="clickArea">
+      Click to earn money!
+    </div>
+
+    <div class="shop">
+      <div class="upgrade" onclick="buyUpgrade('cursor')">
+        <h3>Cursor</h3>
+        <div class="description">Automatically clicks every second</div>
+        <div class="cost">Cost: $<span id="cursorCost">10</span></div>
+        <div class="owned">Owned: <span id="cursorOwned">0</span></div>
+      </div>
+
+      <div class="upgrade" onclick="buyUpgrade('artist')">
+        <h3>Artist</h3>
+        <div class="description">Draws more money</div>
+        <div class="cost">Cost: $<span id="artistCost">50</span></div>
+        <div class="owned">Owned: <span id="artistOwned">0</span></div>
+      </div>
+
+      <div class="upgrade" onclick="buyUpgrade('printer')">
+        <h3>Printer</h3>
+        <div class="description">Mass produces money</div>
+        <div class="cost">Cost: $<span id="printerCost">200</span></div>
+        <div class="owned">Owned: <span id="printerOwned">0</span></div>
+      </div>
+    </div>
+
+    <script>
+      let money = 0;
+      let clickPower = 1;
+      let upgrades = {
+        cursor: { baseCost: 10, cost: 10, owned: 0, multiplier: 0.1 },
+        artist: { baseCost: 50, cost: 50, owned: 0, multiplier: 1 },
+        printer: { baseCost: 200, cost: 200, owned: 0, multiplier: 5 }
+      };
+
+      function formatMoney(amount) {
+        return `$${amount.toFixed(2)}`;
+      }
+
+      function updateDisplay() {
+        document.getElementById('moneyDisplay').textContent = formatMoney(money);
+
+        // Update upgrade displays
+        for (let type in upgrades) {
+          document.getElementById(`${type}Cost`).textContent = upgrades[type].cost.toFixed(2);
+          document.getElementById(`${type}Owned`).textContent = upgrades[type].owned;
+
+          const upgradeElement = document.querySelector(`[onclick="buyUpgrade('${type}')"]`);
+          if (money >= upgrades[type].cost) {
+            upgradeElement.classList.remove('disabled');
+          } else {
+            upgradeElement.classList.add('disabled');
+          }
+        }
+      }
+
+      function addMoney(amount) {
+        money += amount;
+        updateDisplay();
+      }
+
+      function clickMoney() {
+        addMoney(clickPower);
+        // Add click animation
+        const clickArea = document.getElementById('clickArea');
+        clickArea.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          clickArea.style.transform = 'scale(1)';
+        }, 100);
+      }
+
+      function buyUpgrade(type) {
+        const upgrade = upgrades[type];
+        if (money >= upgrade.cost) {
+          money -= upgrade.cost;
+          upgrade.owned++;
+          upgrade.cost = upgrade.baseCost * Math.pow(1.15, upgrade.owned);
+
+          // Apply upgrade effect
+          switch (type) {
+            case 'cursor':
+              clickPower += 0.1;
+              break;
+            case 'artist':
+              addMoney(upgrade.multiplier * upgrade.owned);
+              break;
+            case 'printer':
+              addMoney(upgrade.multiplier * upgrade.owned);
+              break;
+          }
+
+          updateDisplay();
+        }
+      }
+
+      // Game loop
+      setInterval(() => {
+        // Auto-generate money from upgrades
+        addMoney(upgrades.cursor.owned * upgrades.cursor.multiplier);
+        addMoney(upgrades.artist.owned * upgrades.artist.multiplier);
+        addMoney(upgrades.printer.owned * upgrades.printer.multiplier);
+      }, 1000);
+
+      // Initialize display
+      updateDisplay();
+
+      // Add click event listener
+      document.getElementById('clickArea').addEventListener('click', clickMoney);
+
+      // Save/load system
+      function saveGame() {
+        localStorage.setItem('moneyClickerSave', JSON.stringify({
+          money: money,
+          upgrades: upgrades
+        }));
+      }
+
+      function loadGame() {
+        const save = JSON.parse(localStorage.getItem('moneyClickerSave'));
+        if (save) {
+          money = save.money;
+          upgrades = save.upgrades;
+          updateDisplay();
+        }
+      }
+
+      // Autosave every 30 seconds
+      setInterval(saveGame, 30000);
+      window.onload = loadGame;
+    </script>
+  </body>
+
+</html>
