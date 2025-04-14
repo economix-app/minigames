@@ -92,6 +92,50 @@
         color: #888;
         font-size: 0.9em;
       }
+
+      #resetButton {
+        margin: 20px;
+        padding: 10px 20px;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.2s;
+      }
+
+      #resetButton:hover {
+        background-color: #d32f2f;
+      }
+
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 200px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 5px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        /* Position above the element */
+        left: 50%;
+        margin-left: -100px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
     </style>
   </head>
 
@@ -103,52 +147,61 @@
       Click to earn money!
     </div>
 
+    <button id="resetButton" onclick="resetGame()">Reset Game</button>
+
     <div class="shop">
-      <div class="upgrade" onclick="buyUpgrade('cursor')">
+      <div class="upgrade tooltip" onclick="buyUpgrade('cursor')">
         <h3>Cursor</h3>
         <div class="description">Automatically clicks every second</div>
+        <div class="tooltiptext">Increases click power slightly.</div>
         <div class="cost">Cost: $<span id="cursorCost">10</span></div>
         <div class="owned">Owned: <span id="cursorOwned">0</span></div>
       </div>
 
-      <div class="upgrade" onclick="buyUpgrade('artist')">
+      <div class="upgrade tooltip" onclick="buyUpgrade('artist')">
         <h3>Artist</h3>
         <div class="description">Draws more money</div>
+        <div class="tooltiptext">Increases money generation.</div>
         <div class="cost">Cost: $<span id="artistCost">50</span></div>
         <div class="owned">Owned: <span id="artistOwned">0</span></div>
       </div>
 
-      <div class="upgrade" onclick="buyUpgrade('printer')">
+      <div class="upgrade tooltip" onclick="buyUpgrade('printer')">
         <h3>Printer</h3>
         <div class="description">Mass produces money</div>
+        <div class="tooltiptext">Significantly increases money generation.</div>
         <div class="cost">Cost: $<span id="printerCost">200</span></div>
         <div class="owned">Owned: <span id="printerOwned">0</span></div>
       </div>
 
-      <div class="upgrade" onclick="buyUpgrade('factory')">
+      <div class="upgrade tooltip" onclick="buyUpgrade('factory')">
         <h3>Factory</h3>
         <div class="description">Produces goods for profit</div>
+        <div class="tooltiptext">Greatly increases money generation.</div>
         <div class="cost">Cost: $<span id="factoryCost">1000</span></div>
         <div class="owned">Owned: <span id="factoryOwned">0</span></div>
       </div>
 
-      <div class="upgrade" onclick="buyUpgrade('bank')">
+      <div class="upgrade tooltip" onclick="buyUpgrade('bank')">
         <h3>Bank</h3>
         <div class="description">Generates interest</div>
+        <div class="tooltiptext">Generates passive income.</div>
         <div class="cost">Cost: $<span id="bankCost">5000</span></div>
         <div class="owned">Owned: <span id="bankOwned">0</span></div>
       </div>
 
-      <div class="upgrade" onclick="buyUpgrade('spaceAgency')">
+      <div class="upgrade tooltip" onclick="buyUpgrade('spaceAgency')">
         <h3>Space Agency</h3>
         <div class="description">Launches profitable space missions</div>
+        <div class="tooltiptext">Massively increases money generation.</div>
         <div class="cost">Cost: $<span id="spaceAgencyCost">20000</span></div>
         <div class="owned">Owned: <span id="spaceAgencyOwned">0</span></div>
       </div>
 
-      <div class="upgrade" onclick="buyUpgrade('booster')">
+      <div class="upgrade tooltip" onclick="buyUpgrade('booster')">
         <h3>Booster</h3>
         <div class="description">Increases passive income by 10%</div>
+        <div class="tooltiptext">Boosts overall income.</div>
         <div class="cost">Cost: $<span id="boosterCost">10000</span></div>
         <div class="owned">Owned: <span id="boosterOwned">0</span></div>
       </div>
@@ -228,6 +281,20 @@
           }
 
           updateDisplay();
+        }
+      }
+
+      function resetGame() {
+        if (confirm("Are you sure you want to reset your progress?")) {
+          money = 0;
+          clickPower = 1;
+          incomeMultiplier = 1.0;
+          for (let type in upgrades) {
+            upgrades[type].owned = 0;
+            upgrades[type].cost = upgrades[type].baseCost;
+          }
+          updateDisplay();
+          localStorage.removeItem('moneyClickerSave');
         }
       }
 
