@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Battlegrounds</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: 'Orbitron', 'Segoe UI', Arial, sans-serif;
+        background: linear-gradient(to bottom, #0a0a0a, #1c2526);
+        color: #e0f7ff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+      #title-screen,
+      #shop-screen,
+      #pause-menu,
+      #settings-screen {
+        text-align: center;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+        background: linear-gradient(135deg, rgba(0, 20, 40, 0.95), rgba(0, 80, 120, 0.95));
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 0 30px rgba(0, 200, 255, 0.5);
+        border: 2px solid #00d4ff;
+        animation: fadeIn 0.5s;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translate(-50%, -60%);
+        }
+
+        to {
+          opacity: 1;
+          transform: translate(-50%, -50%);
+        }
+      }
+
+      #title-screen h1,
+      #shop-screen h1,
+      #pause-menu h1,
+      #settings-screen h1 {
+        font-size: 4em;
+        margin-bottom: 40px;
+        text-shadow: 0 0 15px #00aaff, 0 0 30px #0055ff;
+        letter-spacing: 2px;
+      }
+
+      #title-screen button,
+      #shop-screen button,
+      #pause-menu button,
+      #settings-screen button {
+        display: block;
+        margin: 20px auto;
+        padding: 15px 30px;
+        font-size: 1.4em;
+        background: linear-gradient(45deg, #007bff, #00d4ff);
+        color: #e0f7ff;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.2s, background 0.3s, box-shadow 0.3s;
+        touch-action: manipulation;
+        box-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+      }
+
+      #title-screen button:hover,
+      #shop-screen button:hover,
+      #pause-menu button:hover,
+      #settings-screen button:hover {
+        background: linear-gradient(45deg, #0099ff, #00eaff);
+        transform: scale(1.1);
+        box-shadow: 0 0 20px rgba(0, 200, 255, 0.8);
+      }
+
+      #game-screen {
+        display: none;
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+        filter: brightness(0.9) contrast(1.1);
+      }
+
+      #hud {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: linear-gradient(135deg, rgba(0, 20, 40, 0.9), rgba(0, 80, 120, 0.9));
+        padding: 20px;
+        border-radius: 12px;
+        max-width: 320px;
+        box-shadow: 0 0 15px rgba(0, 200, 255, 0.4);
+        font-size: 1.2em;
+        border: 2px solid #00d4ff;
+      }
+
+      #hud div {
+        margin: 10px 0;
+        text-shadow: 0 0 5px #00aaff;
+      }
+
+      .health-bar {
+        width: 100%;
+        height: 14px;
+        background: #1a1a1a;
+        border-radius: 7px;
+        overflow: hidden;
+        border: 1px solid #00aaff;
+      }
+
+      .health-bar-fill {
+        height: 100%;
+        background: linear-gradient(to right, #00ff88, #00cc66);
+        transition: width 0.3s ease-in-out;
+      }
+
+      #warp-menu {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: linear-gradient(135deg, rgba(0, 20, 40, 0.9), rgba(0, 80, 120, 0.9));
+        padding: 20px;
+        border-radius: 12px;
+        z-index: 1000;
+        box-shadow: 0 0 15px rgba(0, 200, 255, 0.4);
+        border: 2px solid #00d4ff;
+      }
+
+      #warp-menu button {
+        display: block;
+        margin: 10px 0;
+        padding: 10px 20px;
+        background: linear-gradient(45deg, #0055ff, #00aaff);
+        color: #e0f7ff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.2s;
+        touch-action: manipulation;
+      }
+
+      #warp-menu button:hover {
+        background: linear-gradient(45deg, #0077ff, #00ccff);
+        transform: scale(1.05);
+      }
+
+      #minimap {
+        position: absolute;
+        top: 15px;
+        right: 170px;
+        width: 280px;
+        height: 200px;
+        border: 4px solid #00d4ff;
+        border-radius: 12px;
+        z-index: 1000;
+        box-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
+        background: rgba(0, 20, 40, 0.5);
+      }
+
+      #notifications {
+        position: absolute;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        max-width: 450px;
+        text-align: center;
+      }
+
+      .notification {
+        background: linear-gradient(45deg, rgba(0, 200, 255, 0.9), rgba(0, 100, 200, 0.9));
+        padding: 20px;
+        margin: 10px 0;
+        border-radius: 10px;
+        opacity: 1;
+        transition: opacity 1s, transform 0.5s;
+        box-shadow: 0 0 15px rgba(0, 200, 255, 0.7);
+        font-size: 1.2em;
+        text-shadow: 0 0 5px #000;
+      }
+
+      .notification.fade-out {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      .power-up {
+        animation: pulse 1.2s infinite ease-in-out;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+
+        50% {
+          transform: scale(1.4);
+        }
+
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .shield-active {
+        filter: drop-shadow(0 0 20px #00d4ff) brightness(1.2);
+      }
+
+      .hit-effect {
+        animation: hit 0.3s;
+      }
+
+      @keyframes hit {
+        0% {
+          filter: brightness(2.5) drop-shadow(0 0 10px #ff4500);
+        }
+
+        100% {
+          filter: brightness(1) drop-shadow(0 0 0 transparent);
+        }
+      }
+
+      .particle-effect {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background: radial-gradient(circle, #ff4500, transparent);
+        border-radius: 50%;
+        animation: particleFade 0.5s ease-out forwards;
+        z-index: 999;
+      }
+
+      @keyframes particleFade {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+
+        100% {
+          transform: scale(2);
+          opacity: 0;
+        }
+      }
+
+      #controls {
+        position: absolute;
+        bottom: 30px;
+        left: 30px;
+        right: 30px;
+        display: none;
+        justify-content: space-between;
+        z-index: 1000;
+      }
+
+      .joystick,
+      .button {
+        background: linear-gradient(135deg, rgba(0, 20, 40, 0.8), rgba(0, 80, 120, 0.8));
+        border-radius: 50%;
+        width: 90px;
+        height: 90px;
+        position: relative;
+        touch-action: none;
+        box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+      }
+
+      .joystick-inner {
+        background: linear-gradient(45deg, #00aaff, #00eaff);
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 10px rgba(0, 200, 255, 0.7);
+      }
+
+      .button {
+        background: linear-gradient(45deg, #ff4500, #ff8c00);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #e0f7ff;
+        font-size: 1.3em;
+        cursor: pointer;
+        text-shadow: 0 0 5px #000;
+      }
+
+      .button:active {
+        background: linear-gradient(45deg, #cc3700, #cc6e00);
+        transform: scale(0.95);
+      }
+
+      #aim-indicator {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: radial-gradient(circle, #ff4500, #ff8c00);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 999;
+        display: none;
+        box-shadow: 0 0 10px #ff4500;
+      }
+
+      @media (max-width: 768px) {
+        #controls {
+          display: flex;
+        }
+
+        #hud {
+          max-width: 220px;
+          font-size: 1em;
+          padding: 15px;
+        }
+
+        #minimap {
+          width: 180px;
+          height: 120px;
+          right: 110px;
+        }
+
+        #warp-menu {
+          padding: 15px;
+        }
+
+        #warp-menu button {
+          font-size: 1em;
+          padding: 8px 15px;
+        }
+
+        #title-screen h1,
+        #shop-screen h1,
+        #pause-menu h1,
+        #settings-screen h1 {
+          font-size: 2.5em;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="title-screen">
+      <h1>Battlegrounds</h1>
+      <button id="playBtn">Play</button>
+      <button id="shopBtn">Shop</button>
+      <button id="settingsBtn">Settings</button>
+    </div>
+    <div id="shop-screen" style="display: none;">
+      <h1>Shop</h1>
+      <div id="money">Money: 0</div>
+      <button>Upgrade Health (50)</button>
+      <button>Upgrade Base Health (100)</button>
+      <button>Upgrade Speed (60)</button>
+      <button>Upgrade Damage (80)</button>
+      <button>Upgrade Range (70)</button>
+      <button>Buy Shield (60)</button>
+      <button>Back</button>
+    </div>
+    <div id="pause-menu" style="display: none;">
+      <h1>Paused</h1>
+      <button id="resumeBtn">Resume</button>
+      <button id="pauseShopBtn">Shop</button>
+      <button id="exitBtn">Exit</button>
+    </div>
+    <div id="settings-screen" style="display: none;">
+      <h1>Settings</h1>
+      <div>
+        <label>Sound Volume: <input type="range" id="volume" min="0" max="1" step="0.1" value="0.3"></label>
+      </div>
+      <div>
+        <label>Joystick Sensitivity: <input type="range" id="sensitivity" min="0.2" max="3" step="0.1"
+            value="1"></label>
+      </div>
+      <button id="settingsBackBtn">Back</button>
+    </div>
+    <div id="game-screen">
+      <div id="hud">
+        <div id="score">Score: 0</div>
+        <div id="combo">Combo: 0x</div>
+        <div id="health">Health: <div class="health-bar">
+            <div class="health-bar-fill" style="width: 100%"></div>
+          </div>
+        </div>
+        <div id="base-health">USA Base: <div class="health-bar">
+            <div class="health-bar-fill" style="width: 100%"></div>
+          </div>
+        </div>
+        <div id="money-display">Money: 0</div>
+        <div id="bases-status">Bases: 5 active</div>
+        <div id="upgrades">Upgrades: None</div>
+        <div id="shield">Shield: Inactive</div>
+      </div>
+      <div id="warp-menu">
+        <button onclick="warpTo(40.7128, -74.0060)">New York (USA)</button>
+        <button onclick="warpTo(51.5074, -0.1278)">London (UK)</button>
+        <button onclick="warpTo(35.6762, 139.6503)">Tokyo (Japan)</button>
+        <button onclick="warpTo(-33.8688, 151.2093)">Sydney (Australia)</button>
+        <button onclick="warpTo(55.7558, 37.6173)">Moscow (Russia)</button>
+      </div>
+      <div id="notifications"></div>
+      <div id="minimap"></div>
+      <div id="map"></div>
+      <div id="controls">
+        <div id="joystick" class="joystick">
+          <div class="joystick-inner"></div>
+        </div>
+        <div id="aim-joystick" class="joystick">
+          <div class="joystick-inner"></div>
+        </div>
+        <div id="shoot-button" class="button">Shoot</div>
+      </div>
+      <div id="aim-indicator"></div>
+    </div>
+
+    <script defer>
+      if (typeof L === 'undefined') {
+        alert('Failed to load Leaflet library. Please check your internet connection and try again.');
+      }
+
+      const titleScreen = document.getElementById('title-screen');
+      const shopScreen = document.getElementById('shop-screen');
+      const pauseMenu = document.getElementById('pause-menu');
+      const settingsScreen = document.getElementById('settings-screen');
+      const gameScreen = document.getElementById('game-screen');
+      const scoreDisplay = document.getElementById('score');
+      const comboDisplay = document.getElementById('combo');
+      const healthDisplay = document.getElementById('health');
+      const baseHealthDisplay = document.getElementById('base-health');
+      const moneyDisplay = document.getElementById('money-display');
+      const basesStatusDisplay = document.getElementById('bases-status');
+      const upgradesDisplay = document.getElementById('upgrades');
+      const shieldDisplay = document.getElementById('shield');
+      const notifications = document.getElementById('notifications');
+      const shopMoneyDisplay = document.getElementById('money');
+      const aimIndicator = document.getElementById('aim-indicator');
+      let map, minimap, playerMarker, playerMiniMarker, botMarkers = [], botMiniMarkers = [], bases = [], baseMiniMarkers = [], projectiles = [], powerUps = [];
+      let score = 0, playerHealth = 200, maxPlayerHealth = 200, money = 150;
+      let playerPos = [40.7128, -74.0060];
+      let baseSpeed = 0.07, speed = baseSpeed;
+      let projectileDamage = 20, projectileRange = 7, projectileSpeed = 0.3, baseShootCooldown = 200;
+      let shootCooldown = baseShootCooldown;
+      const keys = {};
+      let isPaused = false, isGameOver = false;
+      let lastShotTime = 0;
+      let comboCount = 0, comboTimer = 0;
+      let shield = { active: false, count: 0, duration: 7000 };
+      let damageBoost = { active: false, multiplier: 2, duration: 10000 };
+      let rapidFire = { active: false, multiplier: 0.5, duration: 8000 };
+      let lastShieldTime = 0, lastDamageBoostTime = 0, lastRapidFireTime = 0;
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      let volume = 0.3, joystickSensitivity = 1;
+      const teams = [
+        { country: 'USA', pos: [40.7128, -74.0060], color: '#00aaff', playerTeam: true },
+        { country: 'UK', pos: [51.5074, -0.1278], color: '#00ff88' },
+        { country: 'Japan', pos: [35.6762, 139.6503], color: '#ff4500' },
+        { country: 'Australia', pos: [-33.8688, 151.2093], color: '#ffd700' },
+        { country: 'Russia', pos: [55.7558, 37.6173], color: '#e0e0e0' }
+      ];
+
+      // Mobile controls
+      let moveJoystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
+      let aimJoystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
+      let isShooting = false;
+      const joystickElement = document.getElementById('joystick');
+      const joystickInner = joystickElement.querySelector('.joystick-inner');
+      const aimJoystickElement = document.getElementById('aim-joystick');
+      const aimJoystickInner = aimJoystickElement.querySelector('.joystick-inner');
+      const shootButton = document.getElementById('shoot-button');
+
+      // Mouse aiming
+      let mousePos = { x: 0, y: 0 };
+      let isMouseAiming = false;
+
+      // SVG Icons (Enhanced)
+      const playerIconSvg = `
+            <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="playerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#00aaff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#0055ff;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M24 6 L18 16 H21 V28 H27 V16 H30 L24 6 Z" fill="url(#playerGrad)"/>
+                <path d="M21 28 H27 L28 32 H20 L21 28 Z" fill="url(#playerGrad)"/>
+                <path d="M18 16 H12 L14 22 H18 Z" fill="#00eaff"/>
+                <path d="M30 16 H36 L34 22 H30 Z" fill="#00eaff"/>
+                <circle cx="24" cy="6" r="3" fill="#ffffff" stroke="#0055ff" stroke-width="1"/>
+                <circle cx="24" cy="6" r="1.5" fill="#00eaff"/>
+            </svg>`;
+      const playerIcon = L.divIcon({
+        html: playerIconSvg,
+        className: '',
+        iconSize: [48, 48],
+        iconAnchor: [24, 24]
+      });
+      const playerMiniIcon = L.divIcon({
+        html: playerIconSvg,
+        className: '',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      function getBotIconSvg(color) {
+        return `
+                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="botGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${color.replace(/#[0-9a-fA-F]{6}/, '#333')};stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M24 6 L18 16 H21 V28 H27 V16 H30 L24 6 Z" fill="url(#botGrad)"/>
+                    <path d="M21 28 H27 L28 32 H20 L21 28 Z" fill="url(#botGrad)"/>
+                    <path d="M18 16 H12 L14 22 H18 Z" fill="${color}"/>
+                    <path d="M30 16 H36 L34 22 H30 Z" fill="${color}"/>
+                    <circle cx="24" cy="6" r="3" fill="#ffffff" stroke="${color}" stroke-width="1"/>
+                </svg>`;
+      }
+
+      function getBaseIconSvg(color) {
+        return `
+                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="baseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="8" y="8" width="24" height="24" fill="url(#baseGrad)" stroke="#ffffff" stroke-width="1"/>
+                    <path d="M10 10 H30 V30 H10 Z" fill="#0a0a0a" fill-opacity="0.5"/>
+                    <circle cx="20" cy="20" r="6" fill="${color}" stroke="#ffffff" stroke-width="1"/>
+                    <circle cx="20" cy="20" r="3" fill="#ffffff"/>
+                </svg>`;
+      }
+
+      const projectileSvg = `
+            <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <radialGradient id="projGrad" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" style="stop-color:#ffdd00;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#ff4500;stop-opacity:0.8" />
+                    </radialGradient>
+                </defs>
+                <circle cx="8" cy="8" r="8" fill="url(#projGrad)"/>
+                <circle cx="8" cy="8" r="4" fill="#ffffff" fill-opacity="0.8"/>
+            </svg>`;
+      const projectileIcon = L.divIcon({
+        html: projectileSvg,
+        className: '',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      });
+
+      const powerUpHealthSvg = `
+            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="healthGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#00ff88;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#00cc66;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M16 4 L20 12 H12 L16 4 Z" fill="url(#healthGrad)"/>
+                <rect x="12" y="12" width="8" height="8" fill="url(#healthGrad)" stroke="#ffffff" stroke-width="1"/>
+                <path d="M16 20 L20 28 H12 L16 20 Z" fill="url(#healthGrad)"/>
+                <circle cx="16" cy="16" r="2" fill="#ffffff"/>
+            </svg>`;
+      const powerUpSpeedSvg = `
+            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="speedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#00aaff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#0055ff;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M6 16 H26 L20 10 M26 16 L20 22" fill="none" stroke="url(#speedGrad)" stroke-width="3"/>
+                <circle cx="16" cy="16" r="3" fill="url(#speedGrad)" stroke="#ffffff" stroke-width="1"/>
+            </svg>`;
+      const powerUpDamageSvg = `
+            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="damageGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#ff4500;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#cc3700;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M16 6 L22 26 L16 20 L10 26 Z" fill="url(#damageGrad)"/>
+                <circle cx="16" cy="16" r="4" fill="#ffdd00" stroke="#ffffff" stroke-width="1"/>
+            </svg>`;
+      const powerUpRapidFireSvg = `
+            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="rapidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#ccac00;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M8 16 H24 M12 12 V20 M20 12 V20" fill="none" stroke="url(#rapidGrad)" stroke-width="3"/>
+                <circle cx="16" cy="16" r="3" fill="#ffffff" stroke="url(#rapidGrad)" stroke-width="1"/>
+            </svg>`;
+      const powerUpHealthIcon = L.divIcon({
+        html: powerUpHealthSvg,
+        className: 'power-up',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+      const powerUpSpeedIcon = L.divIcon({
+        html: powerUpSpeedSvg,
+        className: 'power-up',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+      const powerUpDamageIcon = L.divIcon({
+        html: powerUpDamageSvg,
+        className: 'power-up',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+      const powerUpRapidFireIcon = L.divIcon({
+        html: powerUpRapidFireSvg,
+        className: 'power-up',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      // Sound Effects
+      function playSound(type) {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+
+        switch (type) {
+          case 'shoot':
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.15);
+            break;
+          case 'hit':
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+            break;
+          case 'powerUp':
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.3);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.35);
+            break;
+          case 'shield':
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.25);
+            break;
+          case 'warp':
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.2);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.25);
+            break;
+          case 'baseDestroy':
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.4);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.45);
+            break;
+        }
+      }
+
+      // Particle Effects
+      function createParticleEffect(lat, lng) {
+        const pos = map.latLngToContainerPoint([lat, lng]);
+        const particle = document.createElement('div');
+        particle.className = 'particle-effect';
+        particle.style.left = `${pos.x}px`;
+        particle.style.top = `${pos.y}px`;
+        document.getElementById('game-screen').appendChild(particle);
+        setTimeout(() => particle.remove(), 500);
+      }
+
+      // Event Listeners
+      document.getElementById('playBtn').addEventListener('click', startGame);
+      document.getElementById('shopBtn').addEventListener('click', showShop);
+      document.getElementById('settingsBtn').addEventListener('click', showSettings);
+      document.getElementById('resumeBtn').addEventListener('click', resumeGame);
+      document.getElementById('pauseShopBtn').addEventListener('click', showShopFromPause);
+      document.getElementById('exitBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to exit to the main menu?')) {
+          resetGame(true);
+        }
+      });
+      document.getElementById('settingsBackBtn').addEventListener('click', () => {
+        settingsScreen.style.display = 'none';
+        titleScreen.style.display = 'block';
+      });
+
+      document.getElementById('volume').addEventListener('input', e => {
+        volume = parseFloat(e.target.value);
+      });
+      document.getElementById('sensitivity').addEventListener('input', e => {
+        joystickSensitivity = parseFloat(e.target.value);
+      });
+
+      const shopButtons = document.querySelectorAll('#shop-screen button');
+      shopButtons[0].addEventListener('click', () => upgradeStat('health', 50));
+      shopButtons[1].addEventListener('click', () => upgradeStat('baseHealth', 100));
+      shopButtons[2].addEventListener('click', () => upgradeStat('speed', 60));
+      shopButtons[3].addEventListener('click', () => upgradeStat('damage', 80));
+      shopButtons[4].addEventListener('click', () => upgradeStat('range', 70));
+      shopButtons[5].addEventListener('click', () => buyPowerUp('shield', 60));
+      shopButtons[6].addEventListener('click', backToPrevious);
+
+      let previousScreen = 'title';
+      function showShop() {
+        previousScreen = titleScreen.style.display === 'block' ? 'title' : 'pause';
+        titleScreen.style.display = 'none';
+        pauseMenu.style.display = 'none';
+        shopScreen.style.display = 'block';
+        shopMoneyDisplay.textContent = `Money: ${money}`;
+      }
+
+      function showShopFromPause() {
+        pauseMenu.style.display = 'none';
+        showShop();
+      }
+
+      function showSettings() {
+        titleScreen.style.display = 'none';
+        settingsScreen.style.display = 'block';
+      }
+
+      function backToPrevious() {
+        shopScreen.style.display = 'none';
+        if (previousScreen === 'title') {
+          titleScreen.style.display = 'block';
+        } else {
+          pauseMenu.style.display = 'block';
+        }
+      }
+
+      function upgradeStat(type, cost) {
+        if (money >= cost) {
+          money -= cost;
+          if (type === 'health') {
+            maxPlayerHealth += 50;
+            playerHealth = maxPlayerHealth;
+          } else if (type === 'baseHealth') {
+            const playerBase = bases.find(b => b.country === 'USA');
+            if (playerBase) {
+              playerBase.maxHealth += 100;
+              playerBase.health = playerBase.maxHealth;
+            }
+          } else if (type === 'speed') {
+            baseSpeed += 0.025;
+            speed = baseSpeed;
+          } else if (type === 'damage') {
+            projectileDamage += 10;
+          } else if (type === 'range') {
+            projectileRange += 1.5;
+          }
+          shopMoneyDisplay.textContent = `Money: ${money}`;
+          updateHUD();
+          showNotification(`Upgraded ${type.charAt(0).toUpperCase() + type.slice(1)}!`);
+          playSound('powerUp');
+        } else {
+          alert('Not enough money!');
+        }
+      }
+
+      function buyPowerUp(type, cost) {
+        if (money >= cost) {
+          money -= cost;
+          if (type === 'shield') {
+            shield.count++;
+          }
+          shopMoneyDisplay.textContent = `Money: ${money}`;
+          updateHUD();
+          showNotification(`Purchased ${type.charAt(0).toUpperCase() + type.slice(1)}!`);
+          playSound('powerUp');
+        } else {
+          alert('Not enough money!');
+        }
+      }
+
+      function warpTo(lat, lng) {
+        playerPos = [lat, lng];
+        playerMarker.setLatLng(playerPos);
+        playerMiniMarker.setLatLng(playerPos);
+        map.panTo(playerPos);
+        minimap.panTo(playerPos);
+        playSound('warp');
+        createParticleEffect(lat, lng);
+      }
+
+      async function startGame() {
+        try {
+          titleScreen.style.display = 'none';
+          shopScreen.style.display = 'none';
+          pauseMenu.style.display = 'none';
+          settingsScreen.style.display = 'none';
+          gameScreen.style.display = 'block';
+          await new Promise(resolve => setTimeout(resolve, 100));
+          if (!map) initMap();
+          if (!minimap) initMinimap();
+          if (botMarkers.length === 0) initBots();
+          if (bases.length === 0) await initBases();
+          if (powerUps.length === 0) initPowerUps();
+          updateHUD();
+          gameLoop();
+        } catch (error) {
+          console.error('Failed to start game:', error);
+          alert(`Failed to start game: ${error.message}. Please refresh and try again.`);
+          resetGame(true);
+        }
+      }
+
+      function pauseGame() {
+        isPaused = true;
+        pauseMenu.style.display = 'block';
+        gameScreen.style.opacity = '0.5';
+      }
+
+      function resumeGame() {
+        isPaused = false;
+        pauseMenu.style.display = 'none';
+        gameScreen.style.opacity = '1';
+        gameLoop();
+      }
+
+      function initMap() {
+        try {
+          const mapContainer = document.getElementById('map');
+          if (!mapContainer) throw new Error('Map container not found');
+          map = L.map('map', {
+            center: playerPos,
+            zoom: 6,
+            zoomControl: false,
+            doubleClickZoom: false,
+            touchZoom: false,
+            scrollWheelZoom: false,
+            dragging: false
+          });
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap, © CartoDB'
+          }).addTo(map);
+          playerMarker = L.marker(playerPos, { icon: playerIcon }).addTo(map);
+        } catch (error) {
+          throw new Error('Failed to initialize main map: ' + error.message);
+        }
+      }
+
+      function initMinimap() {
+        try {
+          const minimapContainer = document.getElementById('minimap');
+          if (!minimapContainer) throw new Error('Minimap container not found');
+          minimap = L.map('minimap', {
+            center: playerPos,
+            zoom: 2,
+            zoomControl: false,
+            attributionControl: false,
+            doubleClickZoom: false,
+            touchZoom: false,
+            scrollWheelZoom: false,
+            dragging: false
+          });
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+          }).addTo(minimap);
+          playerMiniMarker = L.marker(playerPos, { icon: playerMiniIcon }).addTo(minimap);
+        } catch (error) {
+          throw new Error('Failed to initialize minimap: ' + error.message);
+        }
+      }
+
+      function initBots() {
+        botMarkers = [];
+        botMiniMarkers = [];
+        teams.forEach(team => {
+          const numBots = team.playerTeam ? 2 : 5;
+          for (let i = 0; i < numBots; i++) {
+            const botPos = [
+              team.pos[0] + (Math.random() - 0.5) * 2,
+              team.pos[1] + (Math.random() - 0.5) * 2
+            ];
+            const botIcon = L.divIcon({
+              html: getBotIconSvg(team.color),
+              className: '',
+              iconSize: [48, 48],
+              iconAnchor: [24, 24]
+            });
+            const botMiniIcon = L.divIcon({
+              html: getBotIconSvg(team.color),
+              className: '',
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            });
+            const bot = L.marker(botPos, { icon: botIcon }).addTo(map);
+            const botMini = L.marker(botPos, { icon: botMiniIcon }).addTo(minimap);
+            botMarkers.push({
+              marker: bot,
+              pos: botPos,
+              health: 80,
+              maxHealth: 80,
+              lastShot: 0,
+              team: team.country,
+              target: null,
+              path: [],
+              pathIndex: 0,
+              attackType: Math.random() < 0.5 ? 'normal' : 'burst'
+            });
+            botMiniMarkers.push({ marker: botMini, pos: botPos });
+          }
+        });
+      }
+
+      function initBases() {
+        return new Promise(resolve => {
+          bases = [];
+          baseMiniMarkers = [];
+          teams.forEach(team => {
+            const baseIcon = L.divIcon({
+              html: getBaseIconSvg(team.color),
+              className: '',
+              iconSize: [40, 40],
+              iconAnchor: [20, 20]
+            });
+            const baseMiniIcon = L.divIcon({
+              html: getBaseIconSvg(team.color),
+              className: '',
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
+            });
+            const base = L.marker(team.pos, { icon: baseIcon }).addTo(map);
+            const baseMini = L.marker(team.pos, { icon: baseMiniIcon }).addTo(minimap);
+            bases.push({
+              marker: base,
+              pos: team.pos,
+              country: team.country,
+              health: 200,
+              maxHealth: 200,
+              active: true
+            });
+            baseMiniMarkers.push({ marker: baseMini, pos: team.pos });
+          });
+          resolve();
+        });
+      }
+
+      function initPowerUps() {
+        const powerUpCoords = teams.map(team => ({
+          pos: [team.pos[0] + (Math.random() - 0.5) * 2, team.pos[1] + (Math.random() - 0.5) * 2],
+          type: ['healthBoost', 'speedBoost', 'damageBoost', 'rapidFire'][Math.floor(Math.random() * 4)]
+        }));
+        powerUps = [];
+        powerUpCoords.forEach(({ pos, type }) => {
+          const icon = type === 'healthBoost' ? powerUpHealthIcon :
+            type === 'speedBoost' ? powerUpSpeedIcon :
+              type === 'damageBoost' ? powerUpDamageIcon : powerUpRapidFireIcon;
+          const powerUp = L.marker(pos, { icon }).addTo(map);
+          const miniPowerUp = L.marker(pos, { icon }).addTo(minimap);
+          powerUps.push({ marker: powerUp, miniMarker: miniPowerUp, pos, type, active: true });
+        });
+      }
+
+      function updateHUD() {
+        scoreDisplay.textContent = `Score: ${score}`;
+        comboDisplay.textContent = `Combo: ${comboCount}x`;
+        healthDisplay.innerHTML = `Health: <div class="health-bar"><div class="health-bar-fill" style="width: ${(playerHealth / maxPlayerHealth) * 100}%"></div></div>`;
+        const playerBase = bases.find(b => b.country === 'USA');
+        baseHealthDisplay.innerHTML = `USA Base: <div class="health-bar"><div class="health-bar-fill" style="width: ${playerBase ? (playerBase.health / playerBase.maxHealth) * 100 : 0}%"></div></div>`;
+        moneyDisplay.textContent = `Money: ${money}`;
+        const activeBases = bases.filter(b => b.active).length;
+        basesStatusDisplay.textContent = `Bases: ${activeBases} active`;
+        upgradesDisplay.textContent = `Upgrades: Health(${maxPlayerHealth}), Speed(${baseSpeed.toFixed(2)}), Damage(${projectileDamage}), Range(${projectileRange})`;
+        shieldDisplay.textContent = `Status: ${shield.active ? 'Shield Active' : `Shields (${shield.count})`}${damageBoost.active ? ' | Damage Boost' : ''}${rapidFire.active ? ' | Rapid Fire' : ''}`;
+        playerMarker.setIcon(L.divIcon({
+          html: playerIconSvg,
+          className: shield.active ? 'shield-active' : '',
+          iconSize: [48, 48],
+          iconAnchor: [24, 24]
+        }));
+      }
+
+      function showNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.textContent = message;
+        notifications.appendChild(notification);
+        setTimeout(() => {
+          notification.classList.add('fade-out');
+          setTimeout(() => notification.remove(), 1000);
+        }, 2500);
+      }
+
+      function createProjectile(pos, direction, damage, range, speed, shooter = 'player') {
+        if (projectiles.length > 50) return; // Limit projectiles for performance
+        const projectile = L.marker(pos, { icon: projectileIcon }).addTo(map);
+        const miniProjectile = L.marker(pos, { icon: projectileIcon }).addTo(minimap);
+        const effectiveDamage = shooter === 'player' && damageBoost.active ? damage * damageBoost.multiplier : damage;
+        projectiles.push({
+          marker: projectile,
+          miniMarker: miniProjectile,
+          pos: [...pos],
+          direction,
+          damage: effectiveDamage,
+          range,
+          speed,
+          shooter,
+          distanceTraveled: 0,
+          startTime: Date.now()
+        });
+        playSound('shoot');
+      }
+
+      function updateProjectiles() {
+        const now = Date.now();
+        projectiles = projectiles.filter(p => {
+          const elapsed = now - p.startTime;
+          p.distanceTraveled += p.speed;
+          if (p.distanceTraveled > p.range || elapsed > 5000) {
+            p.marker.remove();
+            p.miniMarker.remove();
+            return false;
+          }
+          p.pos[0] += p.direction[0] * p.speed;
+          p.pos[1] += p.direction[1] * p.speed;
+          p.marker.setLatLng(p.pos);
+          p.miniMarker.setLatLng(p.pos);
+
+          if (p.shooter !== 'player') {
+            const dist = Math.sqrt(
+              (playerPos[0] - p.pos[0]) ** 2 +
+              (playerPos[1] - p.pos[1]) ** 2
+            );
+            if (dist < 0.12 && !shield.active) {
+              playerHealth -= p.damage;
+              if (playerMarker._icon) {
+                playerMarker._icon.classList.add('hit-effect');
+                setTimeout(() => {
+                  if (playerMarker._icon) playerMarker._icon.classList.remove('hit-effect');
+                }, 300);
+              }
+              createParticleEffect(p.pos[0], p.pos[1]);
+              updateHUD();
+              p.marker.remove();
+              p.miniMarker.remove();
+              playSound('hit');
+              return false;
+            }
+          }
+
+          for (let i = 0; i < botMarkers.length; i++) {
+            const bot = botMarkers[i];
+            if (p.shooter === bot.team) continue;
+            const dist = Math.sqrt(
+              (bot.pos[0] - p.pos[0]) ** 2 +
+              (bot.pos[1] - p.pos[1]) ** 2
+            );
+            if (dist < 0.12) {
+              bot.health -= p.damage;
+              if (bot.marker._icon) {
+                bot.marker._icon.classList.add('hit-effect');
+                setTimeout(() => {
+                  if (bot.marker._icon) bot.marker._icon.classList.remove('hit-effect');
+                }, 300);
+              }
+              createParticleEffect(p.pos[0], p.pos[1]);
+              if (bot.health <= 0 && p.shooter === 'player') {
+                comboCount++;
+                comboTimer = now + 3000;
+                score += 30 * comboCount;
+                money += 20 * comboCount;
+                showNotification(`Enemy destroyed! +${30 * comboCount} score, +${20 * comboCount} money (Combo x${comboCount})`);
+              }
+              p.marker.remove();
+              p.miniMarker.remove();
+              playSound('hit');
+              return false;
+            }
+          }
+
+          for (let i = 0; i < bases.length; i++) {
+            const base = bases[i];
+            if (!base.active || (p.shooter === 'player' && base.country === 'USA') || (p.shooter === base.country)) continue;
+            const dist = Math.sqrt(
+              (base.pos[0] - p.pos[0]) ** 2 +
+              (base.pos[1] - p.pos[1]) ** 2
+            );
+            if (dist < 0.25) {
+              base.health -= p.damage;
+              if (base.marker._icon) {
+                base.marker._icon.classList.add('hit-effect');
+                setTimeout(() => {
+                  if (base.marker._icon) base.marker._icon.classList.remove('hit-effect');
+                }, 300);
+              }
+              createParticleEffect(p.pos[0], p.pos[1]);
+              if (p.shooter === 'player') {
+                showNotification(`Hit ${base.country} base for ${p.damage} damage!`);
+              }
+              if (base.health <= 0) {
+                base.active = false;
+                if (base.marker._icon) base.marker.remove();
+                baseMiniMarkers[i].marker.remove();
+                if (p.shooter === 'player' && base.country !== 'USA') {
+                  comboCount++;
+                  comboTimer = now + 3000;
+                  score += 100 * comboCount;
+                  money += 75 * comboCount;
+                  showNotification(`Destroyed ${base.country} base! +${100 * comboCount} score, +${75 * comboCount} money (Combo x${comboCount})`);
+                  playSound('baseDestroy');
+                }
+              }
+              updateHUD();
+              p.marker.remove();
+              p.miniMarker.remove();
+              playSound('hit');
+              return false;
+            }
+          }
+
+          return true;
+        });
+      }
+
+      function getAimDirection() {
+        if (isMouseAiming && mousePos.x !== 0 && mousePos.y !== 0) {
+          const playerScreenPos = map.latLngToContainerPoint(playerPos);
+          const dx = mousePos.x - playerScreenPos.x;
+          const dy = mousePos.y - playerScreenPos.y;
+          const dist = Math.sqrt(dx ** 2 + dy ** 2);
+          if (dist > 5) { // Reduced threshold for more responsive aiming
+            const targetLatLng = map.containerPointToLatLng([
+              playerScreenPos.x + dx,
+              playerScreenPos.y + dy
+            ]);
+            const latDiff = targetLatLng.lat - playerPos[0];
+            const lngDiff = targetLatLng.lng - playerPos[1];
+            const magnitude = Math.sqrt(latDiff ** 2 + lngDiff ** 2);
+            return [latDiff / magnitude, lngDiff / magnitude];
+          }
+        } else if (aimJoystick.active) {
+          const dist = Math.sqrt(aimJoystick.dx ** 2 + aimJoystick.dy ** 2);
+          if (dist > 3) { // Lowered threshold for finer joystick control
+            const dx = aimJoystick.dx * joystickSensitivity;
+            const dy = aimJoystick.dy * joystickSensitivity;
+            const magnitude = Math.sqrt(dx ** 2 + dy ** 2);
+            return [dx / magnitude, dy / magnitude];
+          }
+        }
+        return null;
+      }
+
+      function updateAimIndicator() {
+        const direction = getAimDirection();
+        if (direction) {
+          const playerScreenPos = map.latLngToContainerPoint(playerPos);
+          const offset = 40; // Reduced offset for better precision
+          aimIndicator.style.left = `${playerScreenPos.x + direction[1] * offset}px`; // Use lng for x-axis
+          aimIndicator.style.top = `${playerScreenPos.y - direction[0] * offset}px`; // Use lat for y-axis (inverted)
+          aimIndicator.style.display = 'block';
+        } else {
+          aimIndicator.style.display = 'none';
+        }
+      }
+
+      function generateBotPath(bot) {
+        const enemyBases = bases.filter(b => b.active && b.country !== bot.team);
+        const otherBots = botMarkers.filter(b => b.team !== bot.team && b.health > 0);
+        let target;
+        const rand = Math.random();
+        if (rand < 0.35 && otherBots.length > 0) {
+          target = otherBots[Math.floor(Math.random() * otherBots.length)].pos;
+        } else if (bot.team !== 'USA' && rand < 0.7) {
+          target = playerPos;
+        } else if (enemyBases.length > 0) {
+          target = enemyBases[Math.floor(Math.random() * enemyBases.length)].pos;
+        } else {
+          return [];
+        }
+        const waypoints = [
+          [bot.pos[0], bot.pos[1]],
+          [bot.pos[0] + (Math.random() - 0.5) * 4, bot.pos[1] + (Math.random() - 0.5) * 4],
+          [target[0] + (Math.random() - 0.5) * 1, target[1] + (Math.random() - 0.5) * 1]
+        ];
+        return waypoints;
+      }
+
+      function findClosestEnemy(bot) {
+        let closest = null;
+        let minDist = Infinity;
+
+        botMarkers.forEach(other => {
+          if (other.team === bot.team || other.health <= 0) return;
+          const dist = Math.sqrt(
+            (bot.pos[0] - other.pos[0]) ** 2 +
+            (bot.pos[1] - other.pos[1]) ** 2
+          );
+          if (dist < minDist && dist < 7) {
+            minDist = dist;
+            closest = { type: 'bot', target: other };
+          }
+        });
+
+        bases.forEach(base => {
+          if (!base.active || base.country === bot.team) return;
+          const dist = Math.sqrt(
+            (bot.pos[0] - base.pos[0]) ** 2 +
+            (bot.pos[1] - base.pos[1]) ** 2
+          );
+          if (dist < minDist && dist < 7) {
+            minDist = dist;
+            closest = { type: 'base', target: base };
+          }
+        });
+
+        if (bot.team !== 'USA') {
+          const dist = Math.sqrt(
+            (bot.pos[0] - playerPos[0]) ** 2 +
+            (bot.pos[1] - playerPos[1]) ** 2
+          );
+          if (dist < minDist && dist < 7) {
+            minDist = dist;
+            closest = { type: 'player', target: { pos: playerPos } };
+          }
+        }
+
+        return closest;
+      }
+
+      function gameLoop() {
+        if (isPaused || isGameOver) return;
+
+        const now = Date.now();
+
+        // Handle movement
+        if (moveJoystick.active) {
+          const dist = Math.sqrt(moveJoystick.dx ** 2 + moveJoystick.dy ** 2);
+          if (dist > 5) {
+            const speedFactor = Math.min(dist / 40, 1);
+            playerPos[0] += (moveJoystick.dy / dist) * speed * speedFactor;
+            playerPos[1] += (moveJoystick.dx / dist) * speed * speedFactor;
+          }
+        } else {
+          if (keys['w']) playerPos[0] += speed;
+          if (keys['s']) playerPos[0] -= speed;
+          if (keys['d']) playerPos[1] += speed;
+          if (keys['a']) playerPos[1] -= speed;
+        }
+
+        // Update player position
+        playerMarker.setLatLng(playerPos);
+        playerMiniMarker.setLatLng(playerPos);
+        map.panTo(playerPos);
+        minimap.panTo(playerPos);
+
+        // Handle shooting
+        const effectiveShootCooldown = rapidFire.active ? shootCooldown * rapidFire.multiplier : shootCooldown;
+        if ((keys[' '] || isShooting || isMouseAiming) && now - lastShotTime > effectiveShootCooldown) {
+          const direction = getAimDirection() || [1, 0];
+          createProjectile(playerPos, direction, projectileDamage, projectileRange, projectileSpeed);
+          lastShotTime = now;
+        }
+
+        // Update aim indicator
+        updateAimIndicator();
+
+        // Update combo
+        if (now > comboTimer) {
+          comboCount = 0;
+        }
+        comboDisplay.textContent = `Combo: ${comboCount}x`;
+
+        // Update bots
+        botMarkers.forEach((bot, i) => {
+          if (bot.health <= 0) {
+            bot.marker.remove();
+            botMiniMarkers[i].marker.remove();
+            return;
+          }
+
+          // Generate path if none exists
+          if (bot.path.length === 0 || bot.pathIndex >= bot.path.length) {
+            bot.path = generateBotPath(bot);
+            bot.pathIndex = 0;
+          }
+
+          // Follow path
+          if (bot.path.length > 0) {
+            const targetPos = bot.path[bot.pathIndex];
+            const dx = targetPos[0] - bot.pos[0];
+            const dy = targetPos[1] - bot.pos[1];
+            const dist = Math.sqrt(dx ** 2 + dy ** 2);
+            const botSpeed = 0.05;
+
+            if (dist > 0.1) {
+              bot.pos[0] += (dx / dist) * botSpeed;
+              bot.pos[1] += (dy / dist) * botSpeed;
+            } else {
+              bot.pathIndex++;
+            }
+          }
+
+          // Check for nearby enemies
+          const target = findClosestEnemy(bot);
+          bot.target = target;
+
+          if (target) {
+            const dx = target.target.pos[0] - bot.pos[0];
+            const dy = target.target.pos[1] - bot.pos[1];
+            const dist = Math.sqrt(dx ** 2 + dy ** 2);
+
+            // Shoot at target
+            if (dist < 7 && now - bot.lastShot > (bot.attackType === 'normal' ? 1000 : 2000)) {
+              const direction = [dx / dist, dy / dist];
+              if (bot.attackType === 'normal') {
+                createProjectile(bot.pos, direction, 15, 7, 0.3, bot.team);
+              } else {
+                // Burst: Fire 3 shots
+                for (let j = -1; j <= 1; j++) {
+                  const angle = j * 0.1;
+                  const burstDir = [
+                    direction[0] * Math.cos(angle) - direction[1] * Math.sin(angle),
+                    direction[0] * Math.sin(angle) + direction[1] * Math.cos(angle)
+                  ];
+                  createProjectile(bot.pos, burstDir, 10, 7, 0.3, bot.team);
+                }
+              }
+              bot.lastShot = now;
+            }
+          }
+
+          bot.marker.setLatLng(bot.pos);
+          botMiniMarkers[i].marker.setLatLng(bot.pos);
+
+          // Collision with player
+          const playerDist = Math.sqrt(
+            (playerPos[0] - bot.pos[0]) ** 2 +
+            (playerPos[1] - bot.pos[1]) ** 2
+          );
+          if (playerDist < 0.25 && bot.team !== 'USA' && !shield.active) {
+            playerHealth -= 10;
+            if (playerMarker._icon) {
+              playerMarker._icon.classList.add('hit-effect');
+              setTimeout(() => {
+                if (playerMarker._icon) playerMarker._icon.classList.remove('hit-effect');
+              }, 300);
+            }
+            createParticleEffect(playerPos[0], playerPos[1]);
+            updateHUD();
+            playSound('hit');
+          }
+        });
+        botMarkers = botMarkers.filter(b => b.health > 0);
+        botMiniMarkers = botMiniMarkers.filter((_, i) => botMarkers[i]);
+
+        // Handle shield
+        if (keys['e'] && shield.count > 0 && !shield.active && now - lastShieldTime > 1000) {
+          shield.active = true;
+          shield.count--;
+          lastShieldTime = now;
+          playSound('shield');
+          createParticleEffect(playerPos[0], playerPos[1]);
+          setTimeout(() => {
+            shield.active = false;
+            updateHUD();
+          }, shield.duration);
+          updateHUD();
+        }
+
+        // Handle power-ups
+        powerUps.forEach(p => {
+          if (!p.active) return;
+          const dist = Math.sqrt(
+            (playerPos[0] - p.pos[0]) ** 2 +
+            (playerPos[1] - p.pos[1]) ** 2
+          );
+          if (dist < 0.25) {
+            p.active = false;
+            p.marker.remove();
+            p.miniMarker.remove();
+            createParticleEffect(p.pos[0], p.pos[1]);
+            if (p.type === 'healthBoost') {
+              playerHealth = Math.min(maxPlayerHealth, playerHealth + 100);
+              showNotification('Health Boost! +100 health');
+              playSound('powerUp');
+            } else if (p.type === 'speedBoost') {
+              speed = baseSpeed * 2.5;
+              showNotification('Speed Boost! 2.5x speed for 10s');
+              playSound('powerUp');
+              setTimeout(() => {
+                speed = baseSpeed;
+                updateHUD();
+              }, 10000);
+            } else if (p.type === 'damageBoost') {
+              damageBoost.active = true;
+              lastDamageBoostTime = now;
+              showNotification('Damage Boost! 2x damage for 10s');
+              playSound('powerUp');
+              setTimeout(() => {
+                damageBoost.active = false;
+                updateHUD();
+              }, damageBoost.duration);
+            } else if (p.type === 'rapidFire') {
+              rapidFire.active = true;
+              lastRapidFireTime = now;
+              showNotification('Rapid Fire! 2x fire rate for 8s');
+              playSound('powerUp');
+              setTimeout(() => {
+                rapidFire.active = false;
+                updateHUD();
+              }, rapidFire.duration);
+            }
+            updateHUD();
+          }
+        });
+
+        // Update projectiles
+        updateProjectiles();
+
+        // Check lose condition
+        const playerBase = bases.find(b => b.country === 'USA');
+        if (playerHealth <= 0 && playerBase && playerBase.active) {
+          playerHealth = maxPlayerHealth;
+          playerPos = [...playerBase.pos];
+          showNotification('Respawned at USA Base!');
+          warpTo(playerPos[0], playerPos[1]);
+          comboCount = 0;
+        } else if (!playerBase || !playerBase.active) {
+          isGameOver = true;
+          alert(`Game Over! Final Score: ${score}`);
+          resetGame(true);
+          return;
+        }
+
+        // Check win condition
+        const enemyBases = bases.filter(b => b.country !== 'USA');
+        if (enemyBases.every(b => !b.active) && playerBase && playerBase.active) {
+          isGameOver = true;
+          alert(`You win! Final Score: ${score}`);
+          resetGame(true);
+          return;
+        }
+
+        requestAnimationFrame(gameLoop);
+      }
+
+      function resetGame(fullReset = false) {
+        if (map) {
+          botMarkers.forEach(bot => bot.marker.remove());
+          botMiniMarkers.forEach(bot => bot.marker.remove());
+          bases.forEach(base => base.marker.remove());
+          baseMiniMarkers.forEach(base => base.marker.remove());
+          projectiles.forEach(p => { p.marker.remove(); p.miniMarker.remove(); });
+          powerUps.forEach(p => { p.marker.remove(); p.miniMarker.remove(); });
+          playerMarker.remove();
+          playerMiniMarker.remove();
+          map.remove();
+          minimap.remove();
+        }
+
+        if (fullReset) {
+          score = 0;
+          playerHealth = 200;
+          maxPlayerHealth = 200;
+          money = 150;
+          baseSpeed = 0.07;
+          speed = baseSpeed;
+          projectileDamage = 20;
+          projectileRange = 7;
+          projectileSpeed = 0.3;
+          shootCooldown = baseShootCooldown;
+          shield = { active: false, count: 0, duration: 7000 };
+          damageBoost = { active: false, multiplier: 2, duration: 10000 };
+          rapidFire = { active: false, multiplier: 0.5, duration: 8000 };
+          comboCount = 0;
+          comboTimer = 0;
+        }
+        playerPos = [40.7128, -74.0060];
+        botMarkers = [];
+        botMiniMarkers = [];
+        bases = [];
+        baseMiniMarkers = [];
+        powerUps = [];
+        projectiles = [];
+        isPaused = false;
+        isGameOver = false;
+        lastShotTime = 0;
+        lastShieldTime = 0;
+        lastDamageBoostTime = 0;
+        lastRapidFireTime = 0;
+        moveJoystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
+        aimJoystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
+        isShooting = false;
+        isMouseAiming = false;
+
+        gameScreen.style.display = 'none';
+        pauseMenu.style.display = 'none';
+        settingsScreen.style.display = 'none';
+        gameScreen.style.opacity = '1';
+        titleScreen.style.display = 'block';
+        initMap();
+        initMinimap();
+        initBots();
+        initBases().then(() => {
+          initPowerUps();
+          updateHUD();
+        });
+      }
+
+      // Keyboard and mouse controls
+      document.addEventListener('keydown', e => {
+        keys[e.key.toLowerCase()] = true;
+        if (e.key === 'p' && gameScreen.style.display === 'block' && !isPaused) {
+          pauseGame();
+        }
+        if (e.key === 'Escape' && gameScreen.style.display === 'block' && !isPaused) {
+          if (confirm('Are you sure you want to exit to the main menu?')) {
+            resetGame(true);
+          }
+        }
+      });
+      document.addEventListener('keyup', e => {
+        keys[e.key.toLowerCase()] = false;
+      });
+
+      document.addEventListener('mousemove', e => {
+        if (gameScreen.style.display === 'block') {
+          mousePos.x = e.clientX;
+          mousePos.y = e.clientY;
+        }
+      });
+
+      document.addEventListener('mousedown', e => {
+        if (gameScreen.style.display === 'block' && e.button === 0) {
+          isMouseAiming = true;
+        }
+      });
+
+      document.addEventListener('mouseup', e => {
+        if (e.button === 0) {
+          isMouseAiming = false;
+        }
+      });
+
+      // Mobile controls
+      joystickElement.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        moveJoystick.active = true;
+        moveJoystick.startX = touch.clientX;
+        moveJoystick.startY = touch.clientY;
+      });
+
+      joystickElement.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (moveJoystick.active) {
+          const touch = e.touches[0];
+          moveJoystick.dx = (touch.clientX - moveJoystick.startX) * joystickSensitivity;
+          moveJoystick.dy = (touch.clientY - moveJoystick.startY) * joystickSensitivity;
+          const dist = Math.sqrt(moveJoystick.dx ** 2 + moveJoystick.dy ** 2);
+          const maxDist = 45;
+          if (dist > maxDist) {
+            moveJoystick.dx = (moveJoystick.dx / dist) * maxDist;
+            moveJoystick.dy = (moveJoystick.dy / dist) * maxDist;
+          }
+          joystickInner.style.transform = `translate(${moveJoystick.dx}px, ${moveJoystick.dy}px)`;
+        }
+      });
+
+      joystickElement.addEventListener('touchend', () => {
+        moveJoystick.active = false;
+        moveJoystick.dx = 0;
+        moveJoystick.dy = 0;
+        joystickInner.style.transform = 'translate(-50%, -50%)';
+      });
+
+      aimJoystickElement.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        aimJoystick.active = true;
+        aimJoystick.startX = touch.clientX;
+        aimJoystick.startY = touch.clientY;
+      });
+
+      aimJoystickElement.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (aimJoystick.active) {
+          const touch = e.touches[0];
+          aimJoystick.dx = (touch.clientX - aimJoystick.startX) * joystickSensitivity;
+          aimJoystick.dy = (touch.clientY - aimJoystick.startY) * joystickSensitivity;
+          const dist = Math.sqrt(aimJoystick.dx ** 2 + aimJoystick.dy ** 2);
+          const maxDist = 45;
+          if (dist > maxDist) {
+            aimJoystick.dx = (aimJoystick.dx / dist) * maxDist;
+            aimJoystick.dy = (aimJoystick.dy / dist) * maxDist;
+          }
+          aimJoystickInner.style.transform = `translate(${aimJoystick.dx}px, ${aimJoystick.dy}px)`;
+        }
+      });
+
+      aimJoystickElement.addEventListener('touchend', () => {
+        aimJoystick.active = false;
+        aimJoystick.dx = 0;
+        aimJoystick.dy = 0;
+        aimJoystickInner.style.transform = 'translate(-50%, -50%)';
+      });
+
+      shootButton.addEventListener('touchstart', e => {
+        e.preventDefault();
+        isShooting = true;
+      });
+
+      shootButton.addEventListener('touchend', () => {
+        isShooting = false;
+      });
+    </script>
+  </body>
+
+</html>
