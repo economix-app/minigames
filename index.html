@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Economix Minigames Hub</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 2rem;
+      animation: fadeInDown 1s ease-out;
+    }
+
+    .game-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+      width: 80%;
+      max-width: 1000px;
+    }
+
+    .game-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      border-radius: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.3s ease, background 0.3s ease;
+      animation: fadeInUp 1s ease-out forwards;
+    }
+
+    .game-card:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    .game-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .game-card p {
+      font-size: 1rem;
+      color: #ddd;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 Economix Minigames Hub</h1>
+  <div class="game-container">
+    <div class="game-card" onclick="goToGame('https://example.com/snake.html')">
+      <h2>Battlegrounds</h2>
+      <p>Explore the world map and engage in intense battles across the globe</p>
+    </div>
+    <div class="game-card" onclick="goToGame('https://example.com/tetris.html')">
+      <h2>Eat that Food!</h2>
+      <p>Satisfying and addictive gameplay</p>
+    </div>
+    <div class="game-card" onclick="goToGame('https://example.com/pong.html')">
+      <h2>Money Clicker</h2>
+      <p>Make the most money in this clicker-style game</p>
+    </div>
+  </div>
+
+  <script>
+    function goToGame(url) {
+      window.location.href = url;
+    }
+  </script>
+</body>
+</html>
